@@ -74,6 +74,14 @@ create and reference this token, follow the following steps :
    with your actual token):
     - github-token : your-github-token
 
+If for any reason you don't want to set github-token as a secret key, you may 
+also change the value the CDK will use by setting the following environment
+variable in the `.env` file (replace your-secret-key with the key name you've 
+set in Secrets Manager) :
+```dotenv
+SECRETS_MANAGER_GITHUB_TOKEN_KEY=your-secret-key
+```
+
 
 Once you've setup your environment, that's it ! You can start putting some CDK
 magic withing your project and see the environment come to life !
