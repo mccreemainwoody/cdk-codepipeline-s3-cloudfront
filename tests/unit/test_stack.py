@@ -10,7 +10,10 @@ from cdk_codepipeline_s3_cloudfront.stacks import (
 
 @pytest.fixture
 def stack() -> CodePipelineS3CloudfrontStack:
-    return CodePipelineS3CloudfrontStack(core.App(), "CodePipelineS3CloudFront")
+    return CodePipelineS3CloudfrontStack(
+        core.App(),
+        "CodePipelineS3CloudFront"
+    )
 
 
 @pytest.fixture
@@ -20,7 +23,7 @@ def template(stack) -> assertions.Template:
 
 @pytest.fixture
 def bucket(stack) -> s3.Bucket:
-    return stack.node.find_child(f"{stack.stack_name}StackBucket")
+    return stack.node.find_child("StaticWebsiteBucket")
 
 
 def test_s3_bucket_is_configured_as_static_website(template, bucket):
@@ -34,12 +37,9 @@ def test_has_cloudfront_distribution_linked_to_bucket(stack, template, bucket):
             "DistributionConfig": {
                 "Origins": [
                     {
-                        "DomainName": {
-                            "Fn::GetAtt": [
-                                stack.resolve(bucket.bucket_name)["Ref"],
-                                "RegionalDomainName"
-                            ]
-                        },
+                        "DomainName": stack.resolve(
+                            bucket.bucket_regional_domain_name
+                        )
                     }
                 ]
             }
@@ -91,7 +91,7 @@ def test_has_codepipeline(template, stack, bucket):
                                 "Version": "1"
                             },
                             "Configuration": {
-                                "BucketName": stack.resolve(bucket.bucket_name),
+                                "BucketName": stack.resolve(bucket.bucket_name)
                             }
                         }
                     ]

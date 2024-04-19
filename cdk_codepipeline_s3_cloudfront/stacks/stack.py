@@ -8,15 +8,17 @@ from aws_cdk import (
     SecretValue
 )
 from constructs import Construct
-from dotenv import load_dotenv
-import os
+
+from ..DeploymentSettings import DeploymentSettings
 
 
-load_dotenv()
+CODEPIPELINE_GITHUB_REPO_OWNER = DeploymentSettings.GITHUB_REPO_OWNER
+CODEPIPELINE_GITHUB_REPO_NAME = DeploymentSettings.GITHUB_REPO_NAME
+CODEPIPELINE_GITHUB_REPO_BRANCH = DeploymentSettings.GITHUB_REPO_BRANCH
 
-CODEPIPELINE_GITHUB_REPO_NAME = os.getenv("CODEPIPELINE_GITHUB_REPO_NAME")
-CODEPIPELINE_GITHUB_REPO_OWNER = os.getenv("CODEPIPELINE_GITHUB_REPO_OWNER")
-CODEPIPELINE_GITHUB_REPO_BRANCH = os.getenv("CODEPIPELINE_GITHUB_REPO_BRANCH")
+SECRETS_MANAGER_GITHUB_TOKEN_KEY = (
+    DeploymentSettings.SECRETS_MANAGER_GITHUB_TOKEN_KEY
+)
 
 
 class CodePipelineS3CloudfrontStack(Stack):
@@ -26,7 +28,7 @@ class CodePipelineS3CloudfrontStack(Stack):
         # S3 Bucket Setup
         bucket = s3.Bucket(
             self,
-            "CodePipelineS3CloudFrontStackBucket",
+            "StaticWebsiteBucket",
             website_index_document="index.html",
             website_error_document="error.html",
             cors=[
@@ -69,7 +71,7 @@ class CodePipelineS3CloudfrontStack(Stack):
         # CloudFront Distribution Setup
         distribution = cloudfront.CloudFrontWebDistribution(
             self,
-            "CodePipelineS3CloudFrontStackDistribution",
+            "CloudFrontDistribution",
             origin_configs=[
                 cloudfront.SourceConfiguration(
                     s3_origin_source=cloudfront.S3OriginConfig(
@@ -87,7 +89,7 @@ class CodePipelineS3CloudfrontStack(Stack):
         # CodePipeline Pipeline Setup
         pipeline = codepipeline.Pipeline(
             self,
-            "CodePipelineS3CloudFrontStackPipeline"
+            "DeploymentPipeline"
         )
 
         # Source Stage Setup
@@ -96,7 +98,9 @@ class CodePipelineS3CloudfrontStack(Stack):
         source_action = codepipeline_actions.GitHubSourceAction(
             action_name="GitHub_Source",
             output=source_output,
-            oauth_token=SecretValue.secrets_manager("github-token"),
+            oauth_token=SecretValue.secrets_manager(
+                SECRETS_MANAGER_GITHUB_TOKEN_KEY
+            ),
             owner=CODEPIPELINE_GITHUB_REPO_OWNER,
             repo=CODEPIPELINE_GITHUB_REPO_NAME,
             branch=CODEPIPELINE_GITHUB_REPO_BRANCH,
